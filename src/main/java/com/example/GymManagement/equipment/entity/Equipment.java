@@ -1,4 +1,4 @@
-package com.example.GymManagement.equipment;
+package com.example.GymManagement.equipment.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
