@@ -3,6 +3,11 @@ package com.example.GymManagement.equipment.service;
 import com.example.GymManagement.equipment.entity.Equipment;
 import com.example.GymManagement.equipment.repository.EquipmentRepository;
 import org.springframework.stereotype.Service;
+import com.example.GymManagement.equipment.dto.EquipmentResponseDto;
+import com.example.GymManagement.equipment.dto.EquipmentRequestDto;
+import com.example.GymManagement.equipment.entity.Ball;
+import com.example.GymManagement.equipment.entity.BoardGame;
+import com.example.GymManagement.equipment.entity.Racket;
 
 import java.util.List;
 
@@ -44,7 +49,77 @@ public class EquipmentService {
     }
 
     // Add equipment
-    public Equipment createEquipment(Equipment equipment) {
+    public Equipment createEquipment(EquipmentRequestDto request) {
+
+        Equipment equipment;
+
+        switch (request.getType().toUpperCase()) {
+
+            case "BALL":
+
+                if (request.getSportType() == null ||
+                        request.getSportType().isBlank()) {
+
+                    throw new IllegalArgumentException(
+                            "Sport type is required for a ball."
+                    );
+                }
+
+                equipment = new Ball(
+                        request.getName(),
+                        request.getItemCondition(),
+                        request.getSportType()
+                );
+
+                break;
+
+
+            case "RACKET":
+
+                if (request.getSportType() == null ||
+                        request.getSportType().isBlank()) {
+
+                    throw new IllegalArgumentException(
+                            "Sport type is required for a racket."
+                    );
+                }
+
+                equipment = new Racket(
+                        request.getName(),
+                        request.getItemCondition(),
+                        request.getSportType(),
+                        request.getStringStatus()
+                );
+
+                break;
+
+
+            case "BOARD_GAME":
+
+                if (request.getPieceCount() == null ||
+                        request.getPieceCount() <= 0) {
+
+                    throw new IllegalArgumentException(
+                            "Piece count must be greater than zero."
+                    );
+                }
+
+                equipment = new BoardGame(
+                        request.getName(),
+                        request.getItemCondition(),
+                        request.getPieceCount()
+                );
+
+                break;
+
+
+            default:
+
+                throw new IllegalArgumentException(
+                        "Invalid equipment type: "
+                                + request.getType()
+                );
+        }
 
         equipment.markAvailable();
 
@@ -105,5 +180,16 @@ public class EquipmentService {
         equipment.markAvailable();
 
         return equipmentRepository.save(equipment);
+    }
+
+    public EquipmentResponseDto toResponseDto(
+            Equipment equipment) {
+
+        return new EquipmentResponseDto(
+                equipment.getEquipmentId(),
+                equipment.getName(),
+                equipment.getItemCondition(),
+                equipment.isAvailable()
+        );
     }
 }

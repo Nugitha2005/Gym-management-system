@@ -8,6 +8,7 @@ import com.example.GymManagement.user.entity.User;
 import com.example.GymManagement.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.GymManagement.equipment.dto.LoanResponseDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,7 +41,7 @@ public class EquipmentLoanService {
             Long userId,
             LocalDateTime dueTime) {
 
-        // 1. Find equipment
+        // Find equipment
         Equipment equipment =
                 equipmentRepository.findById(equipmentId)
                         .orElseThrow(() ->
@@ -49,17 +50,14 @@ public class EquipmentLoanService {
                                 )
                         );
 
-
-        // 2. Check availability
+        // Check availability
         if (!equipment.isAvailable()) {
-
             throw new IllegalStateException(
                     "Equipment is currently unavailable."
             );
         }
 
-
-        // 3. Find user
+        // Find user
         User user =
                 userRepository.findById(userId)
                         .orElseThrow(() ->
@@ -68,8 +66,7 @@ public class EquipmentLoanService {
                                 )
                         );
 
-
-        // 4. Create loan
+        // Create loan
         EquipmentLoan loan =
                 new EquipmentLoan(
                         equipment,
@@ -77,16 +74,13 @@ public class EquipmentLoanService {
                         dueTime
                 );
 
-
-        // 5. Issue equipment
+        // Issue equipment
         loan.issueItem();
 
-
-        // 6. Save equipment
+        // Save equipment
         equipmentRepository.save(equipment);
 
-
-        // 7. Save loan
+        // Save loan
         return equipmentLoanRepository.save(loan);
     }
 
@@ -98,7 +92,6 @@ public class EquipmentLoanService {
     @Transactional
     public EquipmentLoan returnEquipment(Long loanId) {
 
-        // 1. Find loan
         EquipmentLoan loan =
                 equipmentLoanRepository.findById(loanId)
                         .orElseThrow(() ->
@@ -107,18 +100,12 @@ public class EquipmentLoanService {
                                 )
                         );
 
-
-        // 2. Return item
         loan.returnItem();
 
-
-        // 3. Save equipment
         equipmentRepository.save(
                 loan.getEquipment()
         );
 
-
-        // 4. Save loan
         return equipmentLoanRepository.save(loan);
     }
 
@@ -213,5 +200,27 @@ public class EquipmentLoanService {
         return activeLoans.stream()
                 .filter(EquipmentLoan::isOverdue)
                 .toList();
+    }
+
+    public LoanResponseDto toResponseDto(
+            EquipmentLoan loan) {
+
+        return new LoanResponseDto(
+                loan.getLoanId(),
+
+                loan.getEquipment().getEquipmentId(),
+                loan.getEquipment().getName(),
+
+                loan.getUser().getUserId(),
+                loan.getUser().getUniversityId(),
+                loan.getUser().getName(),
+
+                loan.getReceivedTime(),
+                loan.getDueTime(),
+                loan.getReturnedTime(),
+
+                loan.getStatus(),
+                loan.isOverdue()
+        );
     }
 }
