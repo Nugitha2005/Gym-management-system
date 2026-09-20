@@ -30,12 +30,12 @@ public class EquipmentLoan {
     private User user;
 
 
-    // Default constructor required by JPA
+    // JPA requires a no-argument constructor
     public EquipmentLoan() {
     }
 
 
-    // Constructor
+    // Constructor for creating a new loan
     public EquipmentLoan(
             Equipment equipment,
             User user,
@@ -44,10 +44,11 @@ public class EquipmentLoan {
         this.equipment = equipment;
         this.user = user;
         this.dueTime = dueTime;
+        this.status = "BORROWED";
     }
 
 
-    // Issue equipment
+    // Issue the equipment
     public void issueItem() {
 
         if (!equipment.isAvailable()) {
@@ -63,7 +64,7 @@ public class EquipmentLoan {
     }
 
 
-    // Return equipment
+    // Return the equipment
     public void returnItem() {
 
         if ("RETURNED".equals(this.status)) {
@@ -79,15 +80,15 @@ public class EquipmentLoan {
     }
 
 
-    // Check whether loan is overdue
+    // Check whether the loan is overdue
     public boolean isOverdue() {
 
         if (returnedTime != null) {
             return false;
         }
 
-        return dueTime != null &&
-                LocalDateTime.now().isAfter(dueTime);
+        return dueTime != null
+                && LocalDateTime.now().isAfter(dueTime);
     }
 
 
