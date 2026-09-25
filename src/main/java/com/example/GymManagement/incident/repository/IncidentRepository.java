@@ -28,4 +28,11 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
     // 6. Count of still-open reports, for a dashboard badge
     long countByStatus(IncidentStatus status);
+
+    // 7. NEW: review queue for ONE role (DOCTOR or STAFF): everything not yet closed
+    List<Incident> findByAssignedRoleAndStatusNot(String assignedRole, IncidentStatus status);
+
+    // 8. NEW: the admin's queue: every incident not yet closed
+    List<Incident> findByStatusNot(IncidentStatus status);
+
 }
