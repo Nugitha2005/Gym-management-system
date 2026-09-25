@@ -36,8 +36,6 @@ public class User {
 
     @Column(nullable = false, length = 255)
     private String password;
-    @Column(unique = true)
-    private String qrCode;
     @Column(nullable = false)
     private boolean active = true;
 

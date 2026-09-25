@@ -3,7 +3,6 @@ package com.example.GymManagement.user.controller;
 import com.example.GymManagement.user.dto.ChangeRoleRequestDto;
 import com.example.GymManagement.user.dto.UserResponseDto;
 import com.example.GymManagement.user.entity.User;
-import com.example.GymManagement.user.repository.UserRepository;
 import com.example.GymManagement.user.security.UserPrincipal;
 import com.example.GymManagement.user.service.UserService;
 import jakarta.validation.Valid;
@@ -23,11 +22,9 @@ import java.util.List;
 @RequestMapping("/api/users")
 public class UserController {
 
-    private final UserRepository userRepository;
     private final UserService userService;
 
-    public UserController(UserRepository userRepository, UserService userService) {
-        this.userRepository = userRepository;
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
@@ -36,14 +33,10 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponseDto>> getAllUsers() {
 
-        // 1. Fetch every user from the database
-        // 2. Convert each User entity into a safe Response DTO (no passwords)
-        List<UserResponseDto> users = userRepository.findAll()
-                .stream()
-                .map(UserResponseDto::new)
-                .toList();
+        // 1. The service fetches every user and converts them to safe DTOs (no passwords)
+        List<UserResponseDto> users = userService.getAllUsers();
 
-        // 3. Return HTTP 200 OK with the list
+        // 2. Return HTTP 200 OK with the list
         return ResponseEntity.ok(users);
     }
 

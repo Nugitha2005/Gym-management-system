@@ -8,6 +8,7 @@ import com.example.GymManagement.access.entity.EntryType;
 import com.example.GymManagement.access.repository.CheckInRecordRepository;
 import com.example.GymManagement.booking.dto.BookingResponseDto;
 import com.example.GymManagement.booking.entity.Booking;
+import com.example.GymManagement.booking.entity.TrainingSession;
 import com.example.GymManagement.booking.service.BookingService;
 import com.example.GymManagement.config.ResourceNotFoundException;
 import com.example.GymManagement.user.entity.Role;
@@ -22,9 +23,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 
 @Service
 public class CheckInService {
@@ -37,13 +37,18 @@ public class CheckInService {
     public static final int MAX_GYM_CAPACITY = 20;
     public static final int MAX_PRE_BOOKED_SLOTS = 10;
 
+    /**
+     * Roles that work at or run the gym. They do not need a medical clearance to enter,
+     * because clearance is for people exercising as members (students and university staff).
+     */
+    private static final Set<String> ROLES_EXEMPT_FROM_CLEARANCE = Set.of("TRAINER", "DOCTOR", "ADMIN");
+
     private final CheckInRecordRepository checkInRecordRepository;
     private final UserRepository userRepository;
     private final MedicalClearanceService medicalClearanceService;
     private final GymAccessCodeService gymAccessCodeService;
     private final BookingService bookingService;
     private final EntityManager entityManager;
-    private final Map<Long, BookingResponseDto> bookingMetadataCache = new ConcurrentHashMap<>();
 
     public CheckInService(
             CheckInRecordRepository checkInRecordRepository,
@@ -197,13 +202,15 @@ public class CheckInService {
             }
         }
 
-        // 3. Verify the student has a valid, unexpired medical clearance
-        if (!medicalClearanceService.hasValidClearance(userId)) {
+        // 3. Verify the member has a valid, unexpired medical clearance.
+        //    Trainer, doctor and admin are exempt: they work at the gym rather than exercise in it.
+        Role role = user.getRole();
+        boolean exemptFromClearance = role != null && ROLES_EXEMPT_FROM_CLEARANCE.contains(role.getRoleName());
+        if (!exemptFromClearance && !medicalClearanceService.hasValidClearance(userId)) {
             throw new AccessDeniedException("A valid medical clearance is required");
         }
 
         // 4. Verify current time falls within the role's allowed access window (inclusive)
-        Role role = user.getRole();
         if (role != null && role.getAccessStartTime() != null && role.getAccessEndTime() != null) {
             LocalTime currentTime = now.toLocalTime();
             if (currentTime.isBefore(role.getAccessStartTime()) || currentTime.isAfter(role.getAccessEndTime())) {
@@ -224,7 +231,6 @@ public class CheckInService {
         Optional<BookingResponseDto> bookingOpt = bookingService.findBookingCoveringNow(userId, now);
         if (bookingOpt.isPresent()) {
             BookingResponseDto bookingDto = bookingOpt.get();
-            bookingMetadataCache.put(bookingDto.getBookingId(), bookingDto);
 
             // 6a. Create the check-in record linked to the booking
             CheckInRecord bookedRecord = new CheckInRecord();
@@ -306,21 +312,19 @@ public class CheckInService {
         dto.setInsideNow(record.isInside());
         dto.setCheckedInByName(record.getCheckedInBy() != null ? record.getCheckedInBy().getName() : null);
 
-        // 2. If linked to a booking, populate bookingId, sessionTitle, and calculate overstayed status
+        // 2. If linked to a booking, read the session straight from the linked Booking
+        //    (the record already points to it, so no extra lookup or cache is needed),
+        //    then calculate the overstayed status
         if (record.getBooking() != null) {
-            Long bookingId = record.getBooking().getBookingId();
-            dto.setBookingId(bookingId);
+            Booking booking = record.getBooking();
+            dto.setBookingId(booking.getBookingId());
 
-            BookingResponseDto bookingMeta = resolveBookingMetadata(
-                    bookingId,
-                    record.getUser().getUserId(),
-                    record.getEntryTime()
-            );
-            if (bookingMeta != null) {
-                dto.setSessionTitle(bookingMeta.getSessionTitle());
-                if (bookingMeta.getEndTime() != null) {
+            TrainingSession session = booking.getSession();
+            if (session != null) {
+                dto.setSessionTitle(session.getTitle());
+                if (session.getEndTime() != null) {
                     LocalDateTime effectiveEndCheck = record.getExitTime() != null ? record.getExitTime() : now;
-                    dto.setOverstayed(effectiveEndCheck.isAfter(bookingMeta.getEndTime().plusMinutes(10)));
+                    dto.setOverstayed(effectiveEndCheck.isAfter(session.getEndTime().plusMinutes(10)));
                 }
             }
         } else {
@@ -328,20 +332,5 @@ public class CheckInService {
         }
 
         return dto;
-    }
-
-    private BookingResponseDto resolveBookingMetadata(Long bookingId, Long userId, LocalDateTime entryTime) {
-        // 1. Check in-memory cache first
-        BookingResponseDto cached = bookingMetadataCache.get(bookingId);
-        if (cached != null) {
-            return cached;
-        }
-        // 2. Query BookingService using the record's entryTime if not yet cached
-        Optional<BookingResponseDto> lookedUp = bookingService.findBookingCoveringNow(userId, entryTime);
-        if (lookedUp.isPresent() && bookingId.equals(lookedUp.get().getBookingId())) {
-            bookingMetadataCache.put(bookingId, lookedUp.get());
-            return lookedUp.get();
-        }
-        return null;
     }
 }
