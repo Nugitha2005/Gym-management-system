@@ -10,6 +10,11 @@ public class BookingResponseDto {
     private BookingStatus status;
     private LocalDateTime bookingTime;
 
+    // Session details copied in, so callers (e.g. Member B's check-in) never need the Booking entity
+    private String sessionTitle;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+
     public Long getBookingId() { return bookingId; }
     public void setBookingId(Long bookingId) { this.bookingId = bookingId; }
 
@@ -24,4 +29,13 @@ public class BookingResponseDto {
 
     public LocalDateTime getBookingTime() { return bookingTime; }
     public void setBookingTime(LocalDateTime bookingTime) { this.bookingTime = bookingTime; }
+
+    public String getSessionTitle() { return sessionTitle; }
+    public void setSessionTitle(String sessionTitle) { this.sessionTitle = sessionTitle; }
+
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
 }

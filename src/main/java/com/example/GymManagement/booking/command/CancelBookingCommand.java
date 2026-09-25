@@ -31,7 +31,7 @@ public class CancelBookingCommand implements BookingCommand {
     @Override
     public BookingResultDto execute() {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking", "bookingId", bookingId));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking " + bookingId + " not found"));
 
         if (!booking.getUser().getUserId().equals(userId)) {
             throw new AccessDeniedException("You can only cancel your own bookings");

@@ -4,8 +4,10 @@ import com.example.GymManagement.user.entity.Role;
 import com.example.GymManagement.user.entity.User;
 import com.example.GymManagement.user.repository.RoleRepository;
 import com.example.GymManagement.user.repository.UserRepository;
+import com.example.GymManagement.config.ResourceNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.example.GymManagement.user.dto.RegisterRequestDto;
 
 import java.util.UUID;
@@ -50,6 +52,30 @@ public class UserService {
         user.setRole(studentRole);
         user.setActive(true);
 
+        return userRepository.save(user);
+    }
+
+    // Admin changes a user's role, e.g. STUDENT -> UNIVERSITY_STAFF or STUDENT -> TRAINER
+    @Transactional
+    public User changeRole(Long targetUserId, String roleName, Long adminUserId) {
+
+        // 1. An admin may not change their own role, so the system can never be left without an admin
+        if (targetUserId.equals(adminUserId)) {
+            throw new IllegalArgumentException("You cannot change your own role");
+        }
+
+        // 2. Load the user whose role is changing, or fail with 404
+        User user = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User " + targetUserId + " not found"));
+
+        // 3. Look up the new role by name (case-insensitive input, stored names are uppercase)
+        String normalisedRoleName = roleName.trim().toUpperCase();
+        Role newRole = roleRepository.findByRoleName(normalisedRoleName)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown role: " + normalisedRoleName));
+
+        // 4. Assign it and save. The user's new role applies from their next login,
+        //    because the role is read into the session at login time.
+        user.setRole(newRole);
         return userRepository.save(user);
     }
 }

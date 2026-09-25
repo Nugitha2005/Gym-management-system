@@ -66,7 +66,7 @@ public class CheckInController {
     }
 
     @PostMapping("/manual/{userId}")
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
     public ResponseEntity<CheckInResultDto> manualCheckInOrOut(
             @PathVariable("userId") Long studentUserId,
             @AuthenticationPrincipal UserPrincipal principal
@@ -77,14 +77,14 @@ public class CheckInController {
     }
 
     @GetMapping("/inside")
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
     public ResponseEntity<InsideNowResponseDto> getCurrentlyInside() {
         // 1. Return the live list of people inside the gym along with capacity metrics
         return ResponseEntity.ok(checkInService.getInsideNow());
     }
 
     @PutMapping("/records/{recordId}/force-checkout")
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
     public ResponseEntity<CheckInRecordResponseDto> forceCheckout(
             @PathVariable("recordId") Long recordId
     ) {
@@ -93,7 +93,7 @@ public class CheckInController {
     }
 
     @GetMapping("/qr")
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
     public ResponseEntity<GymQrCodeResponseDto> getCurrentQrCode() {
         // 1. Return the current active gym QR code text for printing at the front door
         return ResponseEntity.ok(gymAccessCodeService.getCurrentQrCode());

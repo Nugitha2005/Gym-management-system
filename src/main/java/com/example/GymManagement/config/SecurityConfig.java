@@ -1,11 +1,16 @@
 package com.example.GymManagement.config;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -13,6 +18,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.io.IOException;
 import java.util.List;
 
 @Configuration
@@ -56,16 +62,44 @@ public class SecurityConfig {
                 // 4b. Apply the CORS settings defined above
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // 4c. TEMPORARY: all requests are permitted at the filter level so teammates
-                //     are not blocked while building their features.
-                //     Role protection is enforced per-endpoint with @PreAuthorize instead.
-                //     Change to .anyRequest().authenticated() once the whole team is ready.
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                // 4c. Who may call what, before any controller runs:
+                //     - register and login must work for people who are not logged in yet
+                //     - /error is where Spring forwards failed requests; without this, a normal
+                //       "400 Bad Request" could turn into a misleading 401
+                //     - browser CORS preflight (OPTIONS) requests never carry a login
+                //     - everything else requires a logged-in session.
+                //     Role checks (TRAINER, DOCTOR, ADMIN) are still done per endpoint with @PreAuthorize.
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/error").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .anyRequest().authenticated()
+                )
 
-                // 4d. Built-in form login and HTTP Basic are disabled — we use our own /api/auth/login
+                // 4d. Not logged in -> 401 with a JSON message.
+                //     With form login disabled, Spring would otherwise reply with a bare 403,
+                //     which wrongly means "logged in but not allowed".
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(this::sendNotLoggedIn)
+                )
+
+                // 4e. Built-in form login and HTTP Basic are disabled — we use our own /api/auth/login
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
         return http.build();
+    }
+
+    // 5. Writes the 401 response used by 4d
+    private void sendNotLoggedIn(HttpServletRequest request,
+                                 HttpServletResponse response,
+                                 AuthenticationException authException) throws IOException {
+
+        // 5a. 401 means "you need to log in first"
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
+        // 5b. Same {"error": "..."} shape as GlobalExceptionHandler, so the front-end handles both the same way
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"error\": \"Please log in to continue\"}");
     }
 }
