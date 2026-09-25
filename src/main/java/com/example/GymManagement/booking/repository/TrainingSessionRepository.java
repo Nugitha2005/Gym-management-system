@@ -14,4 +14,9 @@ public interface TrainingSessionRepository extends JpaRepository<TrainingSession
 
     @Query("SELECT s FROM TrainingSession s WHERE s.startTime >= :now AND s.cancelled = false ORDER BY s.startTime ASC")
     List<TrainingSession> findUpcomingSessions(@Param("now") LocalDateTime now);
+
+    // Used by Member B's check-in: non-cancelled sessions running at the given moment, earliest first
+    @Query("SELECT s FROM TrainingSession s WHERE s.cancelled = false " +
+            "AND s.startTime <= :now AND s.endTime > :now ORDER BY s.startTime ASC")
+    List<TrainingSession> findSessionsRunningAt(@Param("now") LocalDateTime now);
 }

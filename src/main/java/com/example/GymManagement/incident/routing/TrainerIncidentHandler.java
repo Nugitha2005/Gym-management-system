@@ -4,13 +4,13 @@ import com.example.GymManagement.incident.entity.Incident;
 
 import java.time.LocalDateTime;
 
-// Concrete product: equipment damage and facility issues go to the trainer.
-// The trainer also covers the front desk, so they use the STAFF role.
-public class StaffIncidentHandler implements IncidentHandler {
+// Concrete product: equipment damage and facility issues go to the gym trainer,
+// who also runs the front desk. They hold the TRAINER role.
+public class TrainerIncidentHandler implements IncidentHandler {
 
     @Override
     public String getAssignedRole() {
-        return "STAFF";
+        return "TRAINER";
     }
 
     @Override

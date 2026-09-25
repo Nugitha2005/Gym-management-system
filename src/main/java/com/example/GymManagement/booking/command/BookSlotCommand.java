@@ -36,10 +36,10 @@ public class BookSlotCommand implements BookingCommand {
     @Override
     public BookingResultDto execute() {
         TrainingSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("TrainingSession", "sessionId", sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Session " + sessionId + " not found"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "userId", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User " + userId + " not found"));
 
         if (!eligibilityChecker.canUserBook(user, session)) {
             throw new IllegalArgumentException("User is not eligible to book or join the waitlist for this session");
@@ -57,6 +57,9 @@ public class BookSlotCommand implements BookingCommand {
             dto.setUserId(user.getUserId());
             dto.setStatus(saved.getStatus());
             dto.setBookingTime(saved.getBookingTime());
+            dto.setSessionTitle(session.getTitle());
+            dto.setStartTime(session.getStartTime());
+            dto.setEndTime(session.getEndTime());
 
             return new BookingResultDto("BOOKED", "Slot booked successfully", dto);
         } else {

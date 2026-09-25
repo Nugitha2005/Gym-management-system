@@ -61,7 +61,7 @@ public class IncidentController {
 
     // ---------------- REVIEW QUEUE ----------------
     @GetMapping("/queue")
-    @PreAuthorize("hasAnyRole('DOCTOR', 'STAFF', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'TRAINER', 'ADMIN')")
     public ResponseEntity<List<IncidentResponseDto>> getReviewQueue(@AuthenticationPrincipal UserPrincipal principal) {
 
         // 1. The service picks the right queue from the handler's role and sorts it by urgency
@@ -86,7 +86,7 @@ public class IncidentController {
 
     // ---------------- RECORD AN ACTION ----------------
     @PostMapping("/{incidentId}/actions")
-    @PreAuthorize("hasAnyRole('DOCTOR', 'STAFF', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'TRAINER', 'ADMIN')")
     public ResponseEntity<IncidentResponseDto> addAction(@PathVariable Long incidentId,
                                                          @AuthenticationPrincipal UserPrincipal principal,
                                                          @Valid @RequestBody IncidentActionRequestDto request) {
@@ -101,7 +101,7 @@ public class IncidentController {
     // ---------------- CHANGE STATUS ----------------
     // PUT rather than PATCH, because your CORS config only allows GET, POST, PUT, DELETE
     @PutMapping("/{incidentId}/status")
-    @PreAuthorize("hasAnyRole('DOCTOR', 'STAFF', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'TRAINER', 'ADMIN')")
     public ResponseEntity<IncidentResponseDto> updateStatus(@PathVariable Long incidentId,
                                                             @AuthenticationPrincipal UserPrincipal principal,
                                                             @Valid @RequestBody IncidentStatusUpdateDto request) {

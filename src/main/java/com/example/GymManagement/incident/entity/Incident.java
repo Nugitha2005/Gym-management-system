@@ -51,7 +51,7 @@ public class Incident {
     @Column(nullable = false, length = 20)
     private IncidentStatus status = IncidentStatus.REPORTED;
 
-    // 4. NEW: which role must deal with this incident ("DOCTOR" or "STAFF").
+    // 4. NEW: which role must deal with this incident ("DOCTOR" or "TRAINER").
     //    Set once, by the IncidentHandlerFactory, when the incident is reported.
     @Column(nullable = false, length = 20)
     private String assignedRole;

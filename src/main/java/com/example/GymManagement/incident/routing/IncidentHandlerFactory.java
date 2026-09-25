@@ -17,7 +17,7 @@ public class IncidentHandlerFactory {
             return new DoctorIncidentHandler();
         }
 
-        // 2. Equipment damage and facility issues go to the trainer (STAFF role)
-        return new StaffIncidentHandler();
+        // 2. Equipment damage and facility issues go to the gym trainer (TRAINER role)
+        return new TrainerIncidentHandler();
     }
 }

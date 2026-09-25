@@ -58,9 +58,9 @@ public class FitnessProfileController {
     }
 
     // ---------------- VIEW A MEMBER'S PROFILE ----------------
-    // Trainer (STAFF), doctor or admin only. medicalNotes is sensitive health information.
+    // Trainer, doctor or admin only. medicalNotes is sensitive health information.
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'DOCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER', 'DOCTOR', 'ADMIN')")
     public ResponseEntity<FitnessProfileResponseDto> getProfileForUser(@PathVariable Long userId) {
 
         // 1. Look up the requested member's profile

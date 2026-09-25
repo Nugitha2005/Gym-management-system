@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 // WHO should deal with this incident, and BY WHEN.
 public interface IncidentHandler {
 
-    // 1. The role that must handle the incident ("DOCTOR" or "STAFF")
+    // 1. The role that must handle the incident ("DOCTOR" or "TRAINER")
     String getAssignedRole();
 
     // 2. The deadline for the first response, based on the severity of the incident
