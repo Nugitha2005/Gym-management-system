@@ -8,8 +8,6 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User,Long> {
     Optional<User> findByEmail(String email);
 
-    Optional<User> findByQrCode(String qrCode);
-
     boolean existsByEmail(String email);
 
     boolean existsByUniversityId(String universityId);

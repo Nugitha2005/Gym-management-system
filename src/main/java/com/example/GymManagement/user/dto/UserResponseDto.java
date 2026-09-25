@@ -14,7 +14,6 @@ public class UserResponseDto {
     private String universityId;
     private String email;
     private String contactNo;
-    private String qrCode;
     private String roleName;
     private boolean active;
 
@@ -24,7 +23,6 @@ public class UserResponseDto {
         this.universityId = user.getUniversityId();
         this.email = user.getEmail();
         this.contactNo = user.getContactNo();
-        this.qrCode = user.getQrCode();
         this.roleName = user.getRole().getRoleName();
         this.active = user.isActive();
     }

@@ -9,8 +9,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.GymManagement.user.dto.RegisterRequestDto;
+import com.example.GymManagement.user.dto.UserResponseDto;
 
-import java.util.UUID;
+import java.util.List;
+
 
 @Service
 public class UserService {
@@ -48,11 +50,22 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setContactNo(request.getContactNo());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setQrCode(UUID.randomUUID().toString());
         user.setRole(studentRole);
         user.setActive(true);
 
         return userRepository.save(user);
+    }
+
+    // Admin view of every user, converted to safe DTOs (no passwords)
+    @Transactional(readOnly = true)
+    public List<UserResponseDto> getAllUsers() {
+
+        // 1. Fetch every user from the database
+        // 2. Convert each User entity into a Response DTO
+        return userRepository.findAll()
+                .stream()
+                .map(UserResponseDto::new)
+                .toList();
     }
 
     // Admin changes a user's role, e.g. STUDENT -> UNIVERSITY_STAFF or STUDENT -> TRAINER
