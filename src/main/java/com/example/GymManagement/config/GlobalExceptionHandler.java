@@ -8,6 +8,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -66,5 +67,21 @@ public class GlobalExceptionHandler {
         Map<String, String> body = new HashMap<>();
         body.put("error", "You do not have permission to perform this action");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
+    // NEW: requested record does not exist -> 404 Not Found
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    // NEW: broken JSON or an invalid enum value (e.g. "severity": "EXTREME") -> 400 Bad Request
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleUnreadable(HttpMessageNotReadableException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", "Request body is invalid. Check the JSON format and the allowed values.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 }
