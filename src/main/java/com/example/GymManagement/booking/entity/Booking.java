@@ -4,41 +4,60 @@ import com.example.GymManagement.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-// Student ID: [IT25100947] | Table: booking
 @Entity
 @Table(name = "booking")
 public class Booking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long bookingId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     private TrainingSession session;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     private LocalDateTime bookingTime = LocalDateTime.now();
-    private String status = "BOOKED";
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BookingStatus status = BookingStatus.CONFIRMED;
 
     public Booking() {}
 
     public Booking(TrainingSession session, User user) {
         this.session = session;
         this.user = user;
+        this.status = BookingStatus.CONFIRMED;
+        this.bookingTime = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Booking(TrainingSession session, User user, BookingStatus status) {
+        this.session = session;
+        this.user = user;
+        this.status = status;
+        this.bookingTime = LocalDateTime.now();
+    }
+
+    public void cancel() {
+        this.status = BookingStatus.CANCELLED;
+    }
+
+    public Long getBookingId() { return bookingId; }
+    public void setBookingId(Long bookingId) { this.bookingId = bookingId; }
+
     public TrainingSession getSession() { return session; }
     public void setSession(TrainingSession session) { this.session = session; }
+
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+
     public LocalDateTime getBookingTime() { return bookingTime; }
     public void setBookingTime(LocalDateTime bookingTime) { this.bookingTime = bookingTime; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+
+    public BookingStatus getStatus() { return status; }
+    public void setStatus(BookingStatus status) { this.status = status; }
 }
