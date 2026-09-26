@@ -4,8 +4,11 @@ import com.example.GymManagement.equipment.dto.LoanRequestDto;
 import com.example.GymManagement.equipment.dto.LoanResponseDto;
 import com.example.GymManagement.equipment.entity.EquipmentLoan;
 import com.example.GymManagement.equipment.service.EquipmentLoanService;
+import com.example.GymManagement.user.security.UserPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,17 +23,23 @@ public class EquipmentLoanController {
     public EquipmentLoanController(
             EquipmentLoanService equipmentLoanService) {
 
-        this.equipmentLoanService = equipmentLoanService;
+        this.equipmentLoanService =
+                equipmentLoanService;
     }
 
+    // =========================================================
+    // GET ALL
+    // TRAINER / ADMIN
+    // =========================================================
 
-    // GET /api/equipment-loans
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @GetMapping
     public ResponseEntity<List<LoanResponseDto>>
     getAllLoans() {
 
         List<LoanResponseDto> response =
-                equipmentLoanService.getAllLoans()
+                equipmentLoanService
+                        .getAllLoans()
                         .stream()
                         .map(equipmentLoanService::toResponseDto)
                         .toList();
@@ -38,8 +47,12 @@ public class EquipmentLoanController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================
+    // GET BY ID
+    // TRAINER / ADMIN
+    // =========================================================
 
-    // GET /api/equipment-loans/{id}
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<LoanResponseDto>
     getLoanById(@PathVariable Long id) {
@@ -52,14 +65,20 @@ public class EquipmentLoanController {
         );
     }
 
+    // =========================================================
+    // GET USER LOANS
+    // TRAINER / ADMIN
+    // =========================================================
 
-    // GET /api/equipment-loans/user/{userId}
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<LoanResponseDto>>
-    getUserLoans(@PathVariable Long userId) {
+    getUserLoans(
+            @PathVariable Long userId) {
 
         List<LoanResponseDto> response =
-                equipmentLoanService.getUserLoans(userId)
+                equipmentLoanService
+                        .getUserLoans(userId)
                         .stream()
                         .map(equipmentLoanService::toResponseDto)
                         .toList();
@@ -67,11 +86,16 @@ public class EquipmentLoanController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================
+    // GET ACTIVE USER LOANS
+    // TRAINER / ADMIN
+    // =========================================================
 
-    // GET /api/equipment-loans/user/{userId}/active
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @GetMapping("/user/{userId}/active")
     public ResponseEntity<List<LoanResponseDto>>
-    getActiveUserLoans(@PathVariable Long userId) {
+    getActiveUserLoans(
+            @PathVariable Long userId) {
 
         List<LoanResponseDto> response =
                 equipmentLoanService
@@ -83,8 +107,35 @@ public class EquipmentLoanController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================
+    // MY LOANS
+    // AUTHENTICATED USER
+    // =========================================================
 
-    // GET /api/equipment-loans/active
+    @GetMapping("/my")
+    public ResponseEntity<List<LoanResponseDto>>
+    getMyLoans(
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        Long userId =
+                principal.getUser().getUserId();
+
+        List<LoanResponseDto> response =
+                equipmentLoanService
+                        .getUserLoans(userId)
+                        .stream()
+                        .map(equipmentLoanService::toResponseDto)
+                        .toList();
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // ACTIVE LOANS
+    // TRAINER / ADMIN
+    // =========================================================
+
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @GetMapping("/active")
     public ResponseEntity<List<LoanResponseDto>>
     getActiveLoans() {
@@ -99,8 +150,12 @@ public class EquipmentLoanController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================
+    // OVERDUE / LATE LOANS
+    // TRAINER / ADMIN
+    // =========================================================
 
-    // GET /api/equipment-loans/overdue
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @GetMapping("/overdue")
     public ResponseEntity<List<LoanResponseDto>>
     getOverdueLoans() {
@@ -115,8 +170,12 @@ public class EquipmentLoanController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================
+    // BORROW / ISSUE EQUIPMENT
+    // TRAINER / ADMIN
+    // =========================================================
 
-    // POST /api/equipment-loans
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @PostMapping
     public ResponseEntity<LoanResponseDto>
     borrowEquipment(
@@ -134,11 +193,16 @@ public class EquipmentLoanController {
         );
     }
 
+    // =========================================================
+    // RETURN EQUIPMENT
+    // TRAINER / ADMIN
+    // =========================================================
 
-    // PUT /api/equipment-loans/{id}/return
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @PutMapping("/{id}/return")
     public ResponseEntity<LoanResponseDto>
-    returnEquipment(@PathVariable Long id) {
+    returnEquipment(
+            @PathVariable Long id) {
 
         EquipmentLoan loan =
                 equipmentLoanService.returnEquipment(id);
