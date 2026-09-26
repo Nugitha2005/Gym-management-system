@@ -1,5 +1,6 @@
 package com.example.GymManagement.equipment.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,10 +16,13 @@ public abstract class Equipment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long equipmentId;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String itemCondition;
 
+    @Column(nullable = false)
     private boolean available;
 
     protected Equipment() {

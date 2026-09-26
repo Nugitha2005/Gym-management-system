@@ -39,12 +39,15 @@ public class LoanResponseDto {
         this.loanId = loanId;
         this.equipmentId = equipmentId;
         this.equipmentName = equipmentName;
+
         this.userId = userId;
         this.universityId = universityId;
         this.userName = userName;
+
         this.receivedTime = receivedTime;
         this.dueTime = dueTime;
         this.returnedTime = returnedTime;
+
         this.status = status;
         this.overdue = overdue;
     }

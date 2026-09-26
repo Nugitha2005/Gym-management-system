@@ -13,13 +13,17 @@ public class EquipmentLoan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long loanId;
 
+    @Column(nullable = false)
     private LocalDateTime receivedTime;
 
+    @Column(nullable = false)
     private LocalDateTime dueTime;
 
     private LocalDateTime returnedTime;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private LoanStatus status;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "equipment_id", nullable = false)
@@ -29,13 +33,9 @@ public class EquipmentLoan {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-
-    // JPA requires a no-argument constructor
     public EquipmentLoan() {
     }
 
-
-    // Constructor for creating a new loan
     public EquipmentLoan(
             Equipment equipment,
             User user,
@@ -44,43 +44,46 @@ public class EquipmentLoan {
         this.equipment = equipment;
         this.user = user;
         this.dueTime = dueTime;
-        this.status = "BORROWED";
+        this.status = LoanStatus.BORROWED;
     }
 
-
-    // Issue the equipment
+    /**
+     * Issues the equipment to the user.
+     */
     public void issueItem() {
 
         if (!equipment.isAvailable()) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                     "Equipment is currently unavailable."
             );
         }
 
         this.receivedTime = LocalDateTime.now();
-        this.status = "BORROWED";
+        this.status = LoanStatus.BORROWED;
 
         equipment.markUnavailable();
     }
 
-
-    // Return the equipment
+    /**
+     * Returns the equipment.
+     */
     public void returnItem() {
 
-        if ("RETURNED".equals(this.status)) {
-            throw new IllegalStateException(
+        if (this.status == LoanStatus.RETURNED) {
+            throw new IllegalArgumentException(
                     "Equipment has already been returned."
             );
         }
 
         this.returnedTime = LocalDateTime.now();
-        this.status = "RETURNED";
+        this.status = LoanStatus.RETURNED;
 
         equipment.markAvailable();
     }
 
-
-    // Check whether the loan is overdue
+    /**
+     * Checks whether the loan is currently overdue.
+     */
     public boolean isOverdue() {
 
         if (returnedTime != null) {
@@ -90,9 +93,6 @@ public class EquipmentLoan {
         return dueTime != null
                 && LocalDateTime.now().isAfter(dueTime);
     }
-
-
-    // Getters and setters
 
     public Long getLoanId() {
         return loanId;
@@ -122,11 +122,11 @@ public class EquipmentLoan {
         this.returnedTime = returnedTime;
     }
 
-    public String getStatus() {
+    public LoanStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(LoanStatus status) {
         this.status = status;
     }
 
