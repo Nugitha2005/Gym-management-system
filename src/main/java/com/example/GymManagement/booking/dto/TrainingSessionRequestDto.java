@@ -1,14 +1,31 @@
 package com.example.GymManagement.booking.dto;
 
 import com.example.GymManagement.booking.entity.SlotType;
+import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 
 public class TrainingSessionRequestDto {
+
+    @NotBlank(message = "Title is required")
     private String title;
+
+    @NotBlank(message = "Instructor name is required")
     private String instructor;
+
+    @NotNull(message = "Slot type is required")
     private SlotType slotType;
+
+    @NotNull(message = "Start time is required")
+    @Future(message = "Start time must be in the future")
     private LocalDateTime startTime;
+
+    @NotNull(message = "End time is required")
     private LocalDateTime endTime;
+
+    // 8. Max capacity capped at 10 pre-booked places
+    @NotNull(message = "Max capacity is required")
+    @Min(value = 1, message = "Capacity must be at least 1")
+    @Max(value = 10, message = "Maximum allowed bookings per session is 10")
     private int maxCapacity;
 
     public String getTitle() { return title; }

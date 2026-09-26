@@ -11,15 +11,26 @@ public class TrainingSession {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long sessionId;
 
+    @Column(nullable = false)
     private String title;
+
+    @Column(nullable = false)
     private String instructor;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private SlotType slotType;
 
+    @Column(nullable = false)
     private LocalDateTime startTime;
+
+    @Column(nullable = false)
     private LocalDateTime endTime;
+
+    @Column(nullable = false)
     private int maxCapacity;
+
+    @Column(nullable = false)
     private boolean cancelled;
 
     public TrainingSession() {}

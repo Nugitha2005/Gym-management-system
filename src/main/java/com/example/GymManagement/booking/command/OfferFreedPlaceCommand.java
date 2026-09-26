@@ -36,7 +36,8 @@ public class OfferFreedPlaceCommand implements BookingCommand {
                 .findBySession_SessionIdAndStatusOrderByRequestedAtAsc(session.getSessionId(), WaitlistStatus.WAITING);
 
         for (WaitlistEntry entry : waitingEntries) {
-            if (eligibilityChecker.canUserBook(entry.getUser(), session)) {
+            // Fix 2: Use waitlist-specific eligibility check that skips "already waitlisted" rule
+            if (eligibilityChecker.canWaitlistedUserBeOffered(entry.getUser(), session)) {
                 entry.setStatus(WaitlistStatus.OFFERED);
                 entry.setOfferedAt(LocalDateTime.now());
                 entry.setOfferExpiresAt(LocalDateTime.now().plusHours(24));

@@ -5,6 +5,7 @@ import com.example.GymManagement.booking.entity.WaitlistStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,7 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, Lo
 
     Optional<WaitlistEntry> findByUser_UserIdAndSession_SessionIdAndStatusIn(
             Long userId, Long sessionId, List<WaitlistStatus> statuses);
+
+    // 3. Used to query expired offers
+    List<WaitlistEntry> findByStatusAndOfferExpiresAtBefore(WaitlistStatus status, LocalDateTime now);
 }
