@@ -1,5 +1,6 @@
 package com.example.GymManagement.equipment.service;
 
+import com.example.GymManagement.access.service.MedicalClearanceService;
 import com.example.GymManagement.config.ResourceNotFoundException;
 import com.example.GymManagement.equipment.dto.LoanResponseDto;
 import com.example.GymManagement.equipment.entity.Equipment;
@@ -14,18 +15,29 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class EquipmentLoanService {
 
+    // Loans that are still out (not yet returned)
+    private static final List<LoanStatus> ACTIVE_STATUSES =
+            List.of(LoanStatus.BORROWED, LoanStatus.LATE);
+
+    // Same rule as gym check-in: these roles work at the gym, so they don't need a medical clearance
+    private static final Set<String> ROLES_EXEMPT_FROM_CLEARANCE =
+            Set.of("TRAINER", "DOCTOR", "ADMIN");
+
     private final EquipmentLoanRepository equipmentLoanRepository;
     private final EquipmentRepository equipmentRepository;
     private final UserRepository userRepository;
+    private final MedicalClearanceService medicalClearanceService;
 
     public EquipmentLoanService(
             EquipmentLoanRepository equipmentLoanRepository,
             EquipmentRepository equipmentRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            MedicalClearanceService medicalClearanceService) {
 
         this.equipmentLoanRepository =
                 equipmentLoanRepository;
@@ -35,6 +47,9 @@ public class EquipmentLoanService {
 
         this.userRepository =
                 userRepository;
+
+        this.medicalClearanceService =
+                medicalClearanceService;
     }
 
     // =========================================================
@@ -97,11 +112,25 @@ public class EquipmentLoanService {
                         );
 
         // -----------------------------------------------------
-        // MEDICAL CLEARANCE CHECK
-        //
-        // We will connect Nugitha's hasValidClearance()
-        // here once that service is provided.
+        // Medical clearance check (Nugitha's MedicalClearanceService)
+        // Students and university staff need a valid clearance to
+        // borrow equipment. Trainer, doctor and admin are exempt.
         // -----------------------------------------------------
+
+        String roleName = user.getRole() != null
+                ? user.getRole().getRoleName()
+                : "";
+
+        boolean exemptFromClearance =
+                ROLES_EXEMPT_FROM_CLEARANCE.contains(roleName);
+
+        if (!exemptFromClearance
+                && !medicalClearanceService.hasValidClearance(userId)) {
+
+            throw new IllegalArgumentException(
+                    "This member does not have a valid medical clearance."
+            );
+        }
 
         // -----------------------------------------------------
         // Create loan
@@ -159,163 +188,84 @@ public class EquipmentLoanService {
     }
 
     // =========================================================
-    // GET ALL LOANS
+    // READ METHODS
+    // These only read. Lateness is worked out when the response
+    // is built (see toResponseDto), so viewing loans never
+    // changes the database.
     // =========================================================
 
+    // GET ALL LOANS
+    @Transactional(readOnly = true)
     public List<EquipmentLoan> getAllLoans() {
-
-        refreshLateStatuses();
 
         return equipmentLoanRepository.findAll();
     }
 
-    // =========================================================
     // GET LOAN BY ID
-    // =========================================================
-
+    @Transactional(readOnly = true)
     public EquipmentLoan getLoanById(Long loanId) {
 
-        EquipmentLoan loan =
-                equipmentLoanRepository.findById(loanId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Equipment loan not found with ID: "
-                                                + loanId
-                                )
-                        );
-
-        refreshLateStatus(loan);
-
-        return loan;
+        return equipmentLoanRepository.findById(loanId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Equipment loan not found with ID: "
+                                        + loanId
+                        )
+                );
     }
 
-    // =========================================================
-    // GET USER LOANS
-    // TRAINER / ADMIN
-    // =========================================================
-
+    // GET USER LOANS (TRAINER / ADMIN, and the student's own /my)
+    @Transactional(readOnly = true)
     public List<EquipmentLoan> getUserLoans(Long userId) {
 
-        User user =
-                userRepository.findById(userId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "User not found with ID: "
-                                                + userId
-                                )
-                        );
+        User user = findUser(userId);
 
-        List<EquipmentLoan> loans =
-                equipmentLoanRepository.findByUser(user);
-
-        refreshLateStatuses(loans);
-
-        return loans;
+        return equipmentLoanRepository.findByUser(user);
     }
 
-    // =========================================================
     // GET ACTIVE USER LOANS
-    // =========================================================
-
+    @Transactional(readOnly = true)
     public List<EquipmentLoan> getActiveUserLoans(
             Long userId) {
 
-        User user =
-                userRepository.findById(userId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "User not found with ID: "
-                                                + userId
-                                )
-                        );
+        User user = findUser(userId);
 
-        List<EquipmentLoan> loans =
-                equipmentLoanRepository
-                        .findByUserAndStatusIn(
-                                user,
-                                List.of(
-                                        LoanStatus.BORROWED,
-                                        LoanStatus.LATE
-                                )
-                        );
-
-        refreshLateStatuses(loans);
-
-        return loans;
+        return equipmentLoanRepository
+                .findByUserAndStatusIn(
+                        user,
+                        ACTIVE_STATUSES
+                );
     }
 
-    // =========================================================
     // GET ACTIVE LOANS
-    // =========================================================
-
+    @Transactional(readOnly = true)
     public List<EquipmentLoan> getActiveLoans() {
 
-        refreshLateStatuses();
-
         return equipmentLoanRepository.findByStatusIn(
-                List.of(
-                        LoanStatus.BORROWED,
-                        LoanStatus.LATE
-                )
+                ACTIVE_STATUSES
         );
     }
 
-    // =========================================================
-    // GET OVERDUE LOANS
-    // =========================================================
-
+    // GET OVERDUE LOANS: still out and past the due time
+    @Transactional(readOnly = true)
     public List<EquipmentLoan> getOverdueLoans() {
 
-        refreshLateStatuses();
-
-        return equipmentLoanRepository.findByStatus(
-                LoanStatus.LATE
-        );
+        return equipmentLoanRepository
+                .findByStatusIn(ACTIVE_STATUSES)
+                .stream()
+                .filter(EquipmentLoan::isOverdue)
+                .toList();
     }
 
-    // =========================================================
-    // REFRESH ONE LATE STATUS
-    // =========================================================
+    private User findUser(Long userId) {
 
-    private void refreshLateStatus(
-            EquipmentLoan loan) {
-
-        if (loan.getStatus() == LoanStatus.BORROWED
-                && loan.isOverdue()) {
-
-            loan.setStatus(LoanStatus.LATE);
-
-            equipmentLoanRepository.save(loan);
-        }
-    }
-
-    // =========================================================
-    // REFRESH ALL LATE STATUSES
-    // =========================================================
-
-    private void refreshLateStatuses() {
-
-        List<EquipmentLoan> borrowedLoans =
-                equipmentLoanRepository.findByStatus(
-                        LoanStatus.BORROWED
+        return userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found with ID: "
+                                        + userId
+                        )
                 );
-
-        refreshLateStatuses(borrowedLoans);
-    }
-
-    private void refreshLateStatuses(
-            List<EquipmentLoan> loans) {
-
-        for (EquipmentLoan loan : loans) {
-
-            if (loan.getStatus() == LoanStatus.BORROWED
-                    && loan.isOverdue()) {
-
-                loan.setStatus(LoanStatus.LATE);
-            }
-        }
-
-        equipmentLoanRepository.saveAll(loans);
     }
 
     // =========================================================
@@ -324,6 +274,13 @@ public class EquipmentLoanService {
 
     public LoanResponseDto toResponseDto(
             EquipmentLoan loan) {
+
+        // A loan that is still out and past its due time is shown as LATE,
+        // worked out at the moment the response is built
+        String displayStatus =
+                loan.getStatus() == LoanStatus.BORROWED && loan.isOverdue()
+                        ? LoanStatus.LATE.name()
+                        : loan.getStatus().name();
 
         return new LoanResponseDto(
                 loan.getLoanId(),
@@ -339,7 +296,7 @@ public class EquipmentLoanService {
                 loan.getDueTime(),
                 loan.getReturnedTime(),
 
-                loan.getStatus().name(),
+                displayStatus,
 
                 loan.isOverdue()
         );
