@@ -9,18 +9,21 @@ import { Icon, type IconName } from "./Icon";
 interface CardProps extends React.HTMLAttributes<HTMLElement> {
   as?: "section" | "div" | "article";
   padding?: "none" | "sm" | "md";
+  /** "navy" is the dark Member ID card; everything else is a white card. */
+  surface?: "white" | "navy";
   /** Accessible name when the card has no visible heading. */
   label?: string;
 }
 
-export function Card({ as = "section", padding = "md", label, className, children, ...rest }: CardProps) {
+export function Card({ as = "section", padding = "md", surface = "white", label, className, children, ...rest }: CardProps) {
   const Component = motion[as] as React.ElementType;
   return (
     <Component
       aria-label={label}
       variants={riseVariants}
       className={cn(
-        "min-w-0 rounded-card border border-line bg-white shadow-card",
+        "min-w-0 rounded-card",
+        surface === "white" ? "border border-line bg-white shadow-card" : "bg-navy text-white shadow-id",
         padding === "md" && "p-5 sm:p-6",
         padding === "sm" && "p-4",
         className,

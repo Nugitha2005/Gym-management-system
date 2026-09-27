@@ -19,6 +19,10 @@ export function parseLocal(value: DateInput): Date | null {
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 /** Date -> "2026-09-27" (Spring LocalDate) */
 export function toLocalDate(d: Date): string {
@@ -39,18 +43,18 @@ export function fmtTime(value: DateInput | Date): string {
 /** "27 Sep 2026" */
 export function fmtDate(value: DateInput | Date): string {
   const d = value instanceof Date ? value : parseLocal(value);
-  return d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—";
+  return d ? `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}` : "—";
 }
 
 /** "Sun 27 Sep" */
 export function fmtDayMonth(value: DateInput | Date): string {
   const d = value instanceof Date ? value : parseLocal(value);
-  return d ? d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "—";
+  return d ? `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}` : "—";
 }
 
 /** "Sunday, 27 September 2026" */
 export function fmtLongDate(d: Date = new Date()): string {
-  return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return `${DAYS_LONG[d.getDay()]}, ${d.getDate()} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 /** "SUN" and "27" for the date tiles */
@@ -58,7 +62,7 @@ export function dateTile(value: DateInput | Date): { dow: string; day: string } 
   const d = value instanceof Date ? value : parseLocal(value);
   if (!d) return { dow: "—", day: "—" };
   return {
-    dow: d.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase(),
+    dow: DAYS[d.getDay()].toUpperCase(),
     day: String(d.getDate()),
   };
 }

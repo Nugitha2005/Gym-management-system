@@ -83,16 +83,19 @@ export function AppShell() {
         </div>
       </header>
 
-      <div className="flex">
-        <nav
-          aria-label={navLabel(user.roleName)}
-          className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-[248px] shrink-0 overflow-hidden bg-navy lg:block"
-        >
-          <TrianglePattern width={248} height={900} count={30} seed={5} />
-          <div className="relative flex h-full flex-col gap-1 overflow-y-auto px-4 py-5">
-            <NavLinks sections={sections} />
-          </div>
-        </nav>
+      <div className="flex min-h-[calc(100dvh-4rem)]">
+        {/* Navy column runs the full page height; the links stay put while the page scrolls */}
+        <div className="hidden w-[248px] shrink-0 self-stretch bg-navy lg:block">
+          <nav
+            aria-label={navLabel(user.roleName)}
+            className="sticky top-16 h-[calc(100dvh-4rem)] overflow-hidden"
+          >
+            <TrianglePattern width={248} height={900} count={30} seed={5} />
+            <div className="relative flex h-full flex-col gap-1 overflow-y-auto px-4 py-5">
+              <NavLinks sections={sections} />
+            </div>
+          </nav>
+        </div>
 
         <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 pt-5 pb-12 outline-none sm:px-8 sm:pt-7 lg:px-12 lg:pt-8">
           <motion.div

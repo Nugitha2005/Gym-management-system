@@ -55,7 +55,7 @@ export function LiveDot({ className }: { className?: string }) {
 
 // ---- Status -> badge mappings shared by every screen ----
 
-export function ClearanceBadge({ status, children }: { status: ClearanceStatus | "NONE"; children?: React.ReactNode }) {
+export function ClearanceBadge({ status, children, className }: { status: ClearanceStatus | "NONE"; children?: React.ReactNode; className?: string }) {
   const map: Record<ClearanceStatus | "NONE", [BadgeTone, string]> = {
     APPROVED: ["success", "Approved"],
     PENDING: ["warning", "Pending"],
@@ -64,7 +64,11 @@ export function ClearanceBadge({ status, children }: { status: ClearanceStatus |
     NONE: ["neutral", "None"],
   };
   const [tone, label] = map[status];
-  return <Badge tone={tone}>{children ?? label}</Badge>;
+  return (
+    <Badge tone={tone} className={className}>
+      {children ?? label}
+    </Badge>
+  );
 }
 
 export function BookingBadge({ status }: { status: BookingStatus }) {

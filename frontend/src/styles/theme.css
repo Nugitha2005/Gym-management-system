@@ -137,8 +137,8 @@
     100% { box-shadow: 0 0 0 0 rgb(31 157 107 / 0); }
   }
   @keyframes scan-line {
-    from { transform: translateY(0); }
-    to { transform: translateY(var(--scan-distance, 200px)); }
+    from { top: 4%; }
+    to { top: 94%; }
   }
   @keyframes spin {
     to { transform: rotate(360deg); }
