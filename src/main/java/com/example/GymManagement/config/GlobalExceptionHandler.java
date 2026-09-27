@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -61,11 +62,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
-    // Logged in, but role not allowed (e.g. STUDENT calling an ADMIN endpoint) -> 403 Forbidden
+    // Logged in, but not allowed -> 403 Forbidden
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
+
+        // 1. A @PreAuthorize role check (e.g. STUDENT calling an ADMIN endpoint) only says "Access Denied",
+        //    so reply with a readable generic message instead
+        String message = "You do not have permission to perform this action";
+
+        // 2. A service-level refusal carries a reason the member needs to see,
+        //    e.g. "A valid medical clearance is required" or "Outside your access hours"
+        boolean roleCheckFailed = ex instanceof AuthorizationDeniedException;
+        if (!roleCheckFailed && ex.getMessage() != null && !ex.getMessage().isBlank()) {
+            message = ex.getMessage();
+        }
+
         Map<String, String> body = new HashMap<>();
-        body.put("error", "You do not have permission to perform this action");
+        body.put("error", message);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
