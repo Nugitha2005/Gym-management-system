@@ -15,7 +15,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/equipment-loans")
-@CrossOrigin(origins = "http://localhost:5173")
 public class EquipmentLoanController {
 
     private final EquipmentLoanService equipmentLoanService;

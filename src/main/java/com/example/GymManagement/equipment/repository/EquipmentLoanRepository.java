@@ -21,6 +21,11 @@ public interface EquipmentLoanRepository
             Equipment equipment
     );
 
+    // True if this item has ever been borrowed (used to block deleting it)
+    boolean existsByEquipment(
+            Equipment equipment
+    );
+
     List<EquipmentLoan> findByUser(
             User user
     );
