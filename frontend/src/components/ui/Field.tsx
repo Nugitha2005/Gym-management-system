@@ -2,7 +2,7 @@ import { forwardRef, useId, useState } from "react";
 import { cn } from "../../lib/cn";
 import { Icon } from "./Icon";
 
-// Inputs: 48px high, 12px radius, #D5DEE8 border; focus = ocean border + soft ring (design system).
+// Inputs: 48px high, 12px radius, line-strong border; focus = ocean border + soft ring (design system).
 // On phones the font is 16px so iOS doesn't zoom into the field.
 const controlBase =
   "w-full rounded-control border bg-white px-3.5 text-base text-ink transition-[border-color,box-shadow] duration-150 sm:text-[15px] " +

@@ -35,5 +35,6 @@ export function FullPageLoader({ tone = "light" }: { tone?: "light" | "navy" }) 
 
 /** Grey placeholder block while a card loads. */
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={cn("rounded-control bg-track", "animate-pulse", className)} />;
+  // A block <span> so it is valid inside <p> and headings as well as <div>
+  return <span aria-hidden="true" className={cn("block rounded-control bg-track", "animate-pulse", className)} />;
 }

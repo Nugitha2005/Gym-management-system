@@ -4,7 +4,7 @@ import { cn } from "../../lib/cn";
 import { riseVariants } from "../../lib/motion";
 import { Icon, type IconName } from "./Icon";
 
-// Card: white, 16px radius, #E6ECF3 border, soft shadow. Every card fades up inside a <Stagger>.
+// Card: white, 16px radius, line-coloured border, soft shadow (see theme.css). Every card fades up inside a <Stagger>.
 
 interface CardProps extends React.HTMLAttributes<HTMLElement> {
   as?: "section" | "div" | "article";

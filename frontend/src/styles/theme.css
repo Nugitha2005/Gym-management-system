@@ -191,6 +191,24 @@
   }
 }
 
+/* Printing the gym QR code: only the poster card is printed */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    box-shadow: none;
+    justify-content: center;
+  }
+}
+
 /* All motion is switched off when the device asks for reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   *,
