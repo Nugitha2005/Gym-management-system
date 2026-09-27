@@ -1,18 +1,18 @@
 package com.example.GymManagement.equipment.controller;
 
+import com.example.GymManagement.equipment.dto.EquipmentRequestDto;
 import com.example.GymManagement.equipment.dto.EquipmentResponseDto;
 import com.example.GymManagement.equipment.entity.Equipment;
 import com.example.GymManagement.equipment.service.EquipmentService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import com.example.GymManagement.equipment.dto.EquipmentRequestDto;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/equipment")
-@CrossOrigin(origins = "http://localhost:5173")
 public class EquipmentController {
 
     private final EquipmentService equipmentService;
@@ -23,8 +23,10 @@ public class EquipmentController {
         this.equipmentService = equipmentService;
     }
 
+    // =========================================================
+    // GET ALL
+    // =========================================================
 
-    // GET /api/equipment
     @GetMapping
     public ResponseEntity<List<EquipmentResponseDto>>
     getAllEquipment() {
@@ -38,14 +40,17 @@ public class EquipmentController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================
+    // GET AVAILABLE
+    // =========================================================
 
-    // GET /api/equipment/available
     @GetMapping("/available")
     public ResponseEntity<List<EquipmentResponseDto>>
     getAvailableEquipment() {
 
         List<EquipmentResponseDto> response =
-                equipmentService.getAvailableEquipment()
+                equipmentService
+                        .getAvailableEquipment()
                         .stream()
                         .map(equipmentService::toResponseDto)
                         .toList();
@@ -53,8 +58,10 @@ public class EquipmentController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================
+    // GET BY ID
+    // =========================================================
 
-    // GET /api/equipment/{id}
     @GetMapping("/{id}")
     public ResponseEntity<EquipmentResponseDto>
     getEquipmentById(@PathVariable Long id) {
@@ -67,14 +74,18 @@ public class EquipmentController {
         );
     }
 
+    // =========================================================
+    // SEARCH
+    // =========================================================
 
-    // GET /api/equipment/search?name=basket
     @GetMapping("/search")
     public ResponseEntity<List<EquipmentResponseDto>>
-    searchEquipment(@RequestParam String name) {
+    searchEquipment(
+            @RequestParam String name) {
 
         List<EquipmentResponseDto> response =
-                equipmentService.searchEquipment(name)
+                equipmentService
+                        .searchEquipment(name)
                         .stream()
                         .map(equipmentService::toResponseDto)
                         .toList();
@@ -82,8 +93,12 @@ public class EquipmentController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================
+    // CREATE
+    // TRAINER / ADMIN ONLY
+    // =========================================================
 
-    // POST /api/equipment
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @PostMapping
     public ResponseEntity<EquipmentResponseDto>
     createEquipment(
@@ -97,18 +112,22 @@ public class EquipmentController {
         );
     }
 
+    // =========================================================
+    // UPDATE
+    // TRAINER / ADMIN ONLY
+    // =========================================================
 
-    // PUT /api/equipment/{id}
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<EquipmentResponseDto>
     updateEquipment(
             @PathVariable Long id,
-            @RequestBody Equipment equipment) {
+            @Valid @RequestBody EquipmentRequestDto request) {
 
         Equipment updated =
                 equipmentService.updateEquipment(
                         id,
-                        equipment
+                        request
                 );
 
         return ResponseEntity.ok(
@@ -116,8 +135,12 @@ public class EquipmentController {
         );
     }
 
+    // =========================================================
+    // DELETE
+    // TRAINER / ADMIN ONLY
+    // =========================================================
 
-    // DELETE /api/equipment/{id}
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void>
     deleteEquipment(@PathVariable Long id) {
