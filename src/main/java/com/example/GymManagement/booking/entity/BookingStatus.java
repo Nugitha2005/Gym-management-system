@@ -3,5 +3,6 @@ package com.example.GymManagement.booking.entity;
 public enum BookingStatus {
     CONFIRMED,
     CANCELLED,
-    ATTENDED
+    ATTENDED,
+    NO_SHOW
 }

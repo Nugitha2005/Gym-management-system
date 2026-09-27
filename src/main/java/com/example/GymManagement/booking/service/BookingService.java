@@ -6,6 +6,7 @@ import com.example.GymManagement.booking.entity.*;
 import com.example.GymManagement.booking.repository.*;
 import com.example.GymManagement.config.ResourceNotFoundException;
 import com.example.GymManagement.user.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +56,144 @@ public class BookingService {
         return commandInvoker.executeCommand(command);
     }
 
+    // 3. Accept Waitlist Offer
+    //    NOTE: once a status has changed, this method RETURNS a result instead of throwing.
+    //    Throwing inside @Transactional rolls everything back, which would undo the EXPIRED/CANCELLED
+    //    status and the offer to the next person.
+    @Transactional
+    public BookingResultDto acceptWaitlistOffer(Long waitlistId, Long userId) {
+
+        // 1. Load the entry, or fail with 404
+        WaitlistEntry entry = waitlistEntryRepository.findById(waitlistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Waitlist entry " + waitlistId + " not found"));
+
+        // 2. Only the student the offer was made to can accept it
+        if (!entry.getUser().getUserId().equals(userId)) {
+            throw new AccessDeniedException("You can only accept your own waitlist offers");
+        }
+
+        // 3. Only an open offer can be accepted
+        if (entry.getStatus() != WaitlistStatus.OFFERED) {
+            throw new IllegalArgumentException("Waitlist entry is not in OFFERED status");
+        }
+
+        // 4. Offer ran out: mark it EXPIRED and pass the place to the next person
+        if (entry.getOfferExpiresAt().isBefore(LocalDateTime.now())) {
+            entry.setStatus(WaitlistStatus.EXPIRED);
+            waitlistEntryRepository.save(entry);
+            offerPlaceToNextPerson(entry.getSession());
+            return new BookingResultDto("EXPIRED", "This offer has expired and was passed to the next person.");
+        }
+
+        // 5. Re-check eligibility: clearance may have expired, or the limits changed since the offer
+        if (!eligibilityChecker.canWaitlistedUserBeOffered(entry.getUser(), entry.getSession())) {
+            entry.setStatus(WaitlistStatus.CANCELLED);
+            waitlistEntryRepository.save(entry);
+            offerPlaceToNextPerson(entry.getSession());
+            return new BookingResultDto("NOT_ELIGIBLE",
+                    "You are no longer eligible for this session (check your medical clearance and booking limits).");
+        }
+
+        // 6. Accept: close the waitlist entry and create the confirmed booking
+        entry.setStatus(WaitlistStatus.CONVERTED);
+        waitlistEntryRepository.save(entry);
+
+        Booking booking = new Booking(entry.getSession(), entry.getUser());
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // 7. Same response shape as every other booking (includes session title and times)
+        return new BookingResultDto("CONVERTED", "Waitlist offer accepted and booking created",
+                mapToBookingDto(savedBooking));
+    }
+
+    // 3. Decline Waitlist Offer
+    @Transactional
+    public BookingResultDto declineWaitlistOffer(Long waitlistId, Long userId) {
+        WaitlistEntry entry = waitlistEntryRepository.findById(waitlistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Waitlist entry " + waitlistId + " not found"));
+
+        if (!entry.getUser().getUserId().equals(userId)) {
+            throw new AccessDeniedException("You can only decline your own waitlist offers");
+        }
+
+        if (entry.getStatus() != WaitlistStatus.OFFERED) {
+            throw new IllegalArgumentException("Waitlist entry is not in OFFERED status");
+        }
+
+        entry.setStatus(WaitlistStatus.CANCELLED);
+        waitlistEntryRepository.save(entry);
+
+        // Re-trigger offer for next person in line
+        BookingResultDto offerResult = offerPlaceToNextPerson(entry.getSession());
+
+        return new BookingResultDto("CANCELLED", "Waitlist offer declined. " + offerResult.getMessage());
+    }
+
+    // 4. Create Session (Trainer / Admin)
+    @Transactional
+    public TrainingSessionResponseDto createSession(TrainingSessionRequestDto dto) {
+
+        // 1. A session must end after it starts
+        if (!dto.getEndTime().isAfter(dto.getStartTime())) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+
+        // 2. There is only one gym floor, so sessions may not overlap
+        if (sessionRepository.existsOverlappingSession(dto.getStartTime(), dto.getEndTime())) {
+            throw new IllegalArgumentException("Another session already covers this time");
+        }
+
+        // 3. Create and save the session
+        TrainingSession session = new TrainingSession(
+                dto.getTitle(),
+                dto.getInstructor(),
+                dto.getSlotType(),
+                dto.getStartTime(),
+                dto.getEndTime(),
+                dto.getMaxCapacity()
+        );
+        TrainingSession saved = sessionRepository.save(session);
+        return mapToSessionDto(saved);
+    }
+
+    // 4. Cancel Session (Trainer / Admin)
+    @Transactional
+    public void cancelSession(Long sessionId) {
+
+        // 1. Load the session, or fail with 404
+        TrainingSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session " + sessionId + " not found"));
+
+        // 2. Can't cancel twice, or cancel something that already happened
+        if (session.isCancelled()) {
+            throw new IllegalArgumentException("This session is already cancelled");
+        }
+        if (session.getEndTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("This session has already ended");
+        }
+
+        // 3. Mark the session cancelled
+        session.setCancelled(true);
+        sessionRepository.save(session);
+
+        // 4. Cancel its confirmed bookings. Otherwise the no-show job would mark these
+        //    students NO_SHOW for a session that never happened.
+        List<Booking> confirmedBookings = bookingRepository.findBySession_SessionIdAndStatusIn(
+                sessionId, List.of(BookingStatus.CONFIRMED));
+        for (Booking booking : confirmedBookings) {
+            booking.cancel();
+        }
+        bookingRepository.saveAll(confirmedBookings);
+
+        // 5. Close its waitlist, including any open offers. No place is offered: the session is gone.
+        List<WaitlistEntry> openEntries = waitlistEntryRepository.findBySession_SessionIdAndStatusIn(
+                sessionId, List.of(WaitlistStatus.WAITING, WaitlistStatus.OFFERED));
+        for (WaitlistEntry entry : openEntries) {
+            entry.setStatus(WaitlistStatus.CANCELLED);
+        }
+        waitlistEntryRepository.saveAll(openEntries);
+    }
+
     public List<TrainingSessionResponseDto> getUpcomingSessions() {
         return sessionRepository.findUpcomingSessions(LocalDateTime.now())
                 .stream()
@@ -64,6 +203,7 @@ public class BookingService {
 
     // =====================================================================
     // Methods used by Member B's check-in feature (spec section 9.1)
+    // DO NOT REMOVE: access/service/CheckInService calls all four.
     // =====================================================================
 
     // How early a booked student may scan in before their session starts
@@ -128,6 +268,14 @@ public class BookingService {
 
         // 4. Both groups have a place reserved that walk-ins must not take
         return (int) (confirmedNotArrived + heldForOffers);
+    }
+
+    // =====================================================================
+    // Helpers
+    // =====================================================================
+
+    private BookingResultDto offerPlaceToNextPerson(TrainingSession session) {
+        return new OfferFreedPlaceCommand(session, waitlistEntryRepository, eligibilityChecker).execute();
     }
 
     private Optional<TrainingSession> findSessionRunningAt(LocalDateTime now) {

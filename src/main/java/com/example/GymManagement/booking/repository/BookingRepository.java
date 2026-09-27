@@ -23,6 +23,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUser_UserIdAndStatusInAndSession_StartTimeAfter(
             Long userId, List<BookingStatus> statuses, LocalDateTime now);
 
+    // 7. Used to query ended sessions that are still CONFIRMED
+    List<Booking> findByStatusAndSession_EndTimeBefore(BookingStatus status, LocalDateTime now);
+
+    // Used when a whole session is cancelled: all of its bookings with the given statuses
+    List<Booking> findBySession_SessionIdAndStatusIn(Long sessionId, List<BookingStatus> statuses);
+
     // Used by Member B's check-in: a user's active booking whose session covers the given moment.
     // JOIN FETCH loads the session in the same query, so its title and times are available afterwards.
     @Query("SELECT b FROM Booking b JOIN FETCH b.session s " +
