@@ -194,6 +194,25 @@ public class BookingService {
         waitlistEntryRepository.saveAll(openEntries);
     }
 
+    // "My bookings": the logged-in student's bookings, newest session first
+    @Transactional(readOnly = true)
+    public List<BookingResponseDto> getMyBookings(Long userId) {
+        return bookingRepository.findByUser_UserIdOrderBySession_StartTimeDesc(userId)
+                .stream()
+                .map(this::mapToBookingDto)
+                .collect(Collectors.toList());
+    }
+
+    // "My waitlist": the logged-in student's waitlist entries. An entry with status OFFERED
+    // is an open offer; its waitlistId is what the student sends to accept or decline it.
+    @Transactional(readOnly = true)
+    public List<WaitlistEntryResponseDto> getMyWaitlist(Long userId) {
+        return waitlistEntryRepository.findByUser_UserIdOrderByRequestedAtDesc(userId)
+                .stream()
+                .map(this::mapToWaitlistDto)
+                .collect(Collectors.toList());
+    }
+
     public List<TrainingSessionResponseDto> getUpcomingSessions() {
         return sessionRepository.findUpcomingSessions(LocalDateTime.now())
                 .stream()
@@ -295,6 +314,19 @@ public class BookingService {
         dto.setSessionTitle(session.getTitle());
         dto.setStartTime(session.getStartTime());
         dto.setEndTime(session.getEndTime());
+        return dto;
+    }
+
+    private WaitlistEntryResponseDto mapToWaitlistDto(WaitlistEntry entry) {
+        WaitlistEntryResponseDto dto = new WaitlistEntryResponseDto();
+        dto.setWaitlistId(entry.getWaitlistId());
+        dto.setSessionId(entry.getSession().getSessionId());
+        dto.setUserId(entry.getUser().getUserId());
+        dto.setStatus(entry.getStatus());
+        dto.setRequestedAt(entry.getRequestedAt());
+        dto.setOfferExpiresAt(entry.getOfferExpiresAt());
+        dto.setSessionTitle(entry.getSession().getTitle());
+        dto.setSessionStartTime(entry.getSession().getStartTime());
         return dto;
     }
 

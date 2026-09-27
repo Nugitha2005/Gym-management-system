@@ -1,8 +1,10 @@
 package com.example.GymManagement.booking.controller;
 
+import com.example.GymManagement.booking.dto.BookingResponseDto;
 import com.example.GymManagement.booking.dto.BookingResultDto;
 import com.example.GymManagement.booking.dto.TrainingSessionRequestDto;
 import com.example.GymManagement.booking.dto.TrainingSessionResponseDto;
+import com.example.GymManagement.booking.dto.WaitlistEntryResponseDto;
 import com.example.GymManagement.booking.service.BookingService;
 import com.example.GymManagement.user.security.UserPrincipal;
 import jakarta.validation.Valid;
@@ -26,6 +28,20 @@ public class BookingController {
     @GetMapping("/sessions/upcoming")
     public ResponseEntity<List<TrainingSessionResponseDto>> getUpcomingSessions() {
         return ResponseEntity.ok(bookingService.getUpcomingSessions());
+    }
+
+    // The logged-in student's own bookings
+    @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<BookingResponseDto>> getMyBookings(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(bookingService.getMyBookings(principal.getUser().getUserId()));
+    }
+
+    // The logged-in student's waitlist entries, including open offers (status OFFERED) to accept or decline
+    @GetMapping("/waitlist/my")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<WaitlistEntryResponseDto>> getMyWaitlist(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(bookingService.getMyWaitlist(principal.getUser().getUserId()));
     }
 
     @PostMapping("/book")

@@ -26,6 +26,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // 7. Used to query ended sessions that are still CONFIRMED
     List<Booking> findByStatusAndSession_EndTimeBefore(BookingStatus status, LocalDateTime now);
 
+    // A student's own bookings, newest session first ("my bookings")
+    List<Booking> findByUser_UserIdOrderBySession_StartTimeDesc(Long userId);
+
     // Used when a whole session is cancelled: all of its bookings with the given statuses
     List<Booking> findBySession_SessionIdAndStatusIn(Long sessionId, List<BookingStatus> statuses);
 

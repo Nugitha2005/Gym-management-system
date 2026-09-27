@@ -41,6 +41,12 @@ public class CancelBookingCommand implements BookingCommand {
             throw new IllegalArgumentException("Only CONFIRMED bookings can be cancelled");
         }
 
+        // A booking can only be cancelled before its session starts.
+        // After that the place can't be reused (offers stop at the start time).
+        if (!booking.getSession().getStartTime().isAfter(java.time.LocalDateTime.now())) {
+            throw new IllegalArgumentException("This session has already started and can no longer be cancelled");
+        }
+
         booking.cancel();
         bookingRepository.save(booking);
 
