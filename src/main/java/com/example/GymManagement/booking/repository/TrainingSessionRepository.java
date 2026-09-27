@@ -19,4 +19,10 @@ public interface TrainingSessionRepository extends JpaRepository<TrainingSession
     @Query("SELECT s FROM TrainingSession s WHERE s.cancelled = false " +
             "AND s.startTime <= :now AND s.endTime > :now ORDER BY s.startTime ASC")
     List<TrainingSession> findSessionsRunningAt(@Param("now") LocalDateTime now);
+
+    // There is only one gym floor, so two non-cancelled sessions may not overlap in time
+    @Query("SELECT COUNT(s) > 0 FROM TrainingSession s WHERE s.cancelled = false " +
+            "AND s.startTime < :end AND s.endTime > :start")
+    boolean existsOverlappingSession(@Param("start") LocalDateTime start,
+                                     @Param("end") LocalDateTime end);
 }

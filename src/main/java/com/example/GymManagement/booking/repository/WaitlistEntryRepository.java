@@ -21,6 +21,9 @@ public interface WaitlistEntryRepository extends JpaRepository<WaitlistEntry, Lo
     Optional<WaitlistEntry> findByUser_UserIdAndSession_SessionIdAndStatusIn(
             Long userId, Long sessionId, List<WaitlistStatus> statuses);
 
+    // Used when a whole session is cancelled: all of its waitlist entries with the given statuses
+    List<WaitlistEntry> findBySession_SessionIdAndStatusIn(Long sessionId, List<WaitlistStatus> statuses);
+
     // 3. Used to query expired offers
     List<WaitlistEntry> findByStatusAndOfferExpiresAtBefore(WaitlistStatus status, LocalDateTime now);
 }

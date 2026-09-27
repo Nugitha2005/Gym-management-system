@@ -6,7 +6,7 @@ import com.example.GymManagement.booking.entity.TrainingSession;
 import com.example.GymManagement.booking.entity.WaitlistStatus;
 import com.example.GymManagement.booking.repository.BookingRepository;
 import com.example.GymManagement.booking.repository.WaitlistEntryRepository;
-import com.example.GymManagement.fitness.service.MedicalClearanceService;
+import com.example.GymManagement.access.service.MedicalClearanceService;
 import com.example.GymManagement.user.entity.User;
 import org.springframework.stereotype.Component;
 

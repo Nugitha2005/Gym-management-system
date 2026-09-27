@@ -32,6 +32,20 @@ public class OfferFreedPlaceCommand implements BookingCommand {
             return new BookingResultDto("NO_ACTION", "No capacity freed");
         }
 
+        // An offer must run out before the session starts, otherwise the held place is wasted.
+        // Window = 15 minutes, or until 5 minutes before the start, whichever comes first.
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime fifteenMinutesFromNow = now.plusMinutes(15);
+        LocalDateTime fiveMinutesBeforeStart = session.getStartTime().minusMinutes(5);
+        LocalDateTime offerExpiresAt = fifteenMinutesFromNow.isBefore(fiveMinutesBeforeStart)
+                ? fifteenMinutesFromNow
+                : fiveMinutesBeforeStart;
+
+        // Too close to the start for anyone to respond: leave the place free for direct booking
+        if (!offerExpiresAt.isAfter(now)) {
+            return new BookingResultDto("NO_ACTION", "Session starts too soon to offer the place");
+        }
+
         List<WaitlistEntry> waitingEntries = waitlistEntryRepository
                 .findBySession_SessionIdAndStatusOrderByRequestedAtAsc(session.getSessionId(), WaitlistStatus.WAITING);
 
@@ -39,8 +53,8 @@ public class OfferFreedPlaceCommand implements BookingCommand {
             // Fix 2: Use waitlist-specific eligibility check that skips "already waitlisted" rule
             if (eligibilityChecker.canWaitlistedUserBeOffered(entry.getUser(), session)) {
                 entry.setStatus(WaitlistStatus.OFFERED);
-                entry.setOfferedAt(LocalDateTime.now());
-                entry.setOfferExpiresAt(LocalDateTime.now().plusHours(24));
+                entry.setOfferedAt(now);
+                entry.setOfferExpiresAt(offerExpiresAt);
                 WaitlistEntry saved = waitlistEntryRepository.save(entry);
 
                 WaitlistEntryResponseDto dto = new WaitlistEntryResponseDto();

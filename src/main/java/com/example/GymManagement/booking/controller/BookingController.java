@@ -4,7 +4,7 @@ import com.example.GymManagement.booking.dto.BookingResultDto;
 import com.example.GymManagement.booking.dto.TrainingSessionRequestDto;
 import com.example.GymManagement.booking.dto.TrainingSessionResponseDto;
 import com.example.GymManagement.booking.service.BookingService;
-import com.example.GymManagement.security.UserPrincipal;
+import com.example.GymManagement.user.security.UserPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
