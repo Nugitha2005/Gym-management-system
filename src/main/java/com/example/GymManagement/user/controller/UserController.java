@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -38,6 +39,19 @@ public class UserController {
 
         // 2. Return HTTP 200 OK with the list
         return ResponseEntity.ok(users);
+    }
+
+    // TRAINER, DOCTOR or ADMIN — find a member by University ID, e.g. /api/users/lookup?universityId=IT24103257
+    // Used by the front desk (manual check-in, lending equipment) and to open a member's fitness profile
+    @GetMapping("/lookup")
+    @PreAuthorize("hasAnyRole('TRAINER', 'DOCTOR', 'ADMIN')")
+    public ResponseEntity<UserResponseDto> lookupByUniversityId(@RequestParam String universityId) {
+
+        // 1. The service trims the ID and returns 404 if nobody has it
+        UserResponseDto user = userService.lookupByUniversityId(universityId);
+
+        // 2. Return HTTP 200 OK with the member's details
+        return ResponseEntity.ok(user);
     }
 
     // ADMIN only — change a user's role, e.g. make a lecturer UNIVERSITY_STAFF or a new hire TRAINER

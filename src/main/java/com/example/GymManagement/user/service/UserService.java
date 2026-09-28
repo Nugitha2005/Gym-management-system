@@ -68,6 +68,24 @@ public class UserService {
                 .toList();
     }
 
+    // Trainer, doctor or admin finds a member by the University ID on their card
+    @Transactional(readOnly = true)
+    public UserResponseDto lookupByUniversityId(String universityId) {
+
+        // 1. Ignore stray spaces around the typed ID
+        String trimmedId = universityId == null ? "" : universityId.trim();
+        if (trimmedId.isEmpty()) {
+            throw new IllegalArgumentException("University ID is required");
+        }
+
+        // 2. Load the user, or fail with 404 so the screen can say "No member found"
+        User user = userRepository.findByUniversityIdIgnoreCase(trimmedId)
+                .orElseThrow(() -> new ResourceNotFoundException("No member found with University ID " + trimmedId));
+
+        // 3. Return safe details only (no password)
+        return new UserResponseDto(user);
+    }
+
     // Admin changes a user's role, e.g. STUDENT -> UNIVERSITY_STAFF or STUDENT -> TRAINER
     @Transactional
     public User changeRole(Long targetUserId, String roleName, Long adminUserId) {
